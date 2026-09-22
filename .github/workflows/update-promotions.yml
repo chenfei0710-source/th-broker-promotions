@@ -1,0 +1,34 @@
+name: 泰国券商促销自动更新
+
+on:
+  schedule:
+    # 每周二 10:30 BKK (UTC+7) = 03:30 UTC
+    - cron: '30 3 * * 2'
+  workflow_dispatch:   # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate HTML
+        run: python3 update-promotions.py --no-deploy
+
+      - name: Deploy to GitHub Pages
+        run: |
+          cp netlify-deploy/index.html docs/index.html
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add docs/index.html
+          git diff --cached --quiet || git commit -m "Auto-update: $(date +'%Y-%m-%d %H:%M') BKK"
+          git push
